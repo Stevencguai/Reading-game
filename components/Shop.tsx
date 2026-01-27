@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { MOCK_SHOP } from '../constants';
+import { ShopItem } from '../types';
 
 interface ShopProps {
   mana: number;
@@ -8,45 +8,44 @@ interface ShopProps {
 }
 
 const Shop: React.FC<ShopProps> = ({ mana, onBack }) => {
+  const handlePurchase = (item: ShopItem) => {
+    if (mana < item.price) {
+      alert("瑪那不足！快去閱讀獲取能量。");
+      return;
+    }
+    const confirmed = window.confirm(`確認花費 ${item.price} 瑪那購買「${item.name}」嗎？`);
+    if (confirmed) {
+      alert("購買成功！道具已放入背包（即將推出）。");
+    }
+  };
+
   return (
-    <div className="flex flex-col p-4">
-       <header className="flex items-center gap-4 mb-6">
-        <button onClick={onBack} className="text-slate-400">
-          <span className="material-symbols-outlined">arrow_back</span>
-        </button>
-        <h2 className="text-lg font-bold">獎勵商城 (Shop)</h2>
+    <div className="p-4">
+      <header className="flex items-center gap-4 mb-6">
+        <button onClick={onBack} className="text-slate-400"><span className="material-symbols-outlined">arrow_back</span></button>
+        <h2 className="text-xl font-bold tracking-widest">獎勵商城</h2>
       </header>
 
-      <div className="bg-gradient-to-r from-card-dark to-surface-dark border border-border-purple/30 p-6 rounded-3xl mb-8 flex flex-col items-center gap-2 relative overflow-hidden">
-        <div className="absolute top-0 right-0 size-24 bg-primary/10 blur-2xl -mr-12 -mt-12"></div>
-        <p className="text-[10px] font-bold text-accent-purple uppercase tracking-widest">可用瑪那 (MANA)</p>
-        <div className="flex items-center gap-2">
-           <span className="material-symbols-outlined text-primary text-3xl fill-1">diamond</span>
-           <span className="text-4xl font-display font-bold tracking-tight">{mana.toLocaleString()}</span>
+      <div className="bg-gradient-to-br from-primary/20 to-accent-purple/20 p-6 rounded-3xl mb-8 border border-white/10 text-center">
+        <p className="text-[10px] font-bold text-accent-purple uppercase tracking-widest mb-1">可用瑪那</p>
+        <div className="flex items-center justify-center gap-2">
+          <span className="material-symbols-outlined text-primary text-3xl">diamond</span>
+          <span className="text-4xl font-bold">{mana}</span>
         </div>
       </div>
 
-      <div className="space-y-4 mb-20">
-         {MOCK_SHOP.map(item => (
-           <div key={item.id} className={`flex items-center gap-4 p-3 bg-card-dark border rounded-2xl transition-all ${item.locked ? 'border-border-purple/10 grayscale opacity-60' : 'border-border-purple/30'}`}>
-              <div className="relative size-16 shrink-0 rounded-xl overflow-hidden bg-background-dark">
-                <img src={item.imageUrl} alt={item.name} className="size-full object-cover" />
-                {item.locked && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white/50">lock</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                 <h4 className="font-bold text-sm truncate">{item.name}</h4>
-                 <p className="text-[10px] text-accent-purple line-clamp-1">{item.description}</p>
-                 <p className="text-primary font-bold text-sm mt-1">{item.price} Pt</p>
-              </div>
-              <button disabled={item.locked} className={`size-10 rounded-xl flex items-center justify-center transition-all ${item.locked ? 'bg-border-purple/20 text-slate-500' : 'bg-primary text-white shadow-lg'}`}>
-                 <span className="material-symbols-outlined text-xl">{item.locked ? 'lock' : 'shopping_cart'}</span>
-              </button>
-           </div>
-         ))}
+      <div className="grid gap-4">
+        {MOCK_SHOP.map(item => (
+          <div key={item.id} className="bg-card-dark border border-white/5 p-4 rounded-2xl flex items-center gap-4">
+            <img src={item.imageUrl} className="size-16 rounded-xl object-cover" />
+            <div className="flex-1">
+              <h4 className="font-bold">{item.name}</h4>
+              <p className="text-[10px] text-slate-400">{item.description}</p>
+              <p className="text-primary font-bold mt-1">{item.price} Mana</p>
+            </div>
+            <button onClick={() => handlePurchase(item)} className="bg-primary px-4 py-2 rounded-lg text-xs font-bold">購買</button>
+          </div>
+        ))}
       </div>
     </div>
   );

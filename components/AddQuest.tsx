@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Book } from '../types';
 
@@ -11,7 +10,16 @@ const AddQuest: React.FC<AddQuestProps> = ({ onBack, onSave }) => {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [pages, setPages] = useState<number>(0);
-  const [genre, setGenre] = useState('');
+  const [genre, setGenre] = useState('自我成長');
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,8 +31,8 @@ const AddQuest: React.FC<AddQuestProps> = ({ onBack, onSave }) => {
       author,
       totalPages: pages,
       currentPage: 0,
-      genre: genre || 'General',
-      coverUrl: `https://picsum.photos/id/${Math.floor(Math.random() * 100)}/200/300`,
+      genre,
+      coverUrl: previewUrl || `https://picsum.photos/id/${Math.floor(Math.random() * 100)}/200/300`,
       status: 'active',
       lastRead: new Date().toISOString()
     };
@@ -32,87 +40,37 @@ const AddQuest: React.FC<AddQuestProps> = ({ onBack, onSave }) => {
   };
 
   return (
-    <div className="flex flex-col p-4 bg-background-dark h-screen">
-       <header className="flex items-center justify-between mb-8">
-        <button onClick={onBack} className="text-slate-400">
-          <span className="material-symbols-outlined">arrow_back</span>
-        </button>
-        <h2 className="text-lg font-bold flex items-center gap-2">
-           <span className="material-symbols-outlined text-primary">stylus_note</span>
-           新增任務
-        </h2>
-        <div className="w-6"></div>
+    <form onSubmit={handleSubmit} className="p-6 flex flex-col min-h-screen">
+      <header className="flex items-center gap-4 mb-8">
+        <button type="button" onClick={onBack} className="text-slate-400"><span className="material-symbols-outlined">arrow_back</span></button>
+        <h2 className="text-xl font-bold">新增閱讀任務</h2>
       </header>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col gap-6">
-         {/* Cover Placeholder */}
-         <div className="w-full aspect-[4/3] rounded-2xl border-2 border-dashed border-border-purple/30 bg-surface-dark/50 flex flex-col items-center justify-center gap-2 text-slate-500">
-            <span className="material-symbols-outlined text-4xl">add_a_photo</span>
-            <p className="text-xs font-bold uppercase tracking-widest">裝備書本 (Equip Book)</p>
-         </div>
+      <div className="space-y-6">
+        <div className="flex flex-col items-center">
+          <div className="size-32 rounded-2xl border-2 border-dashed border-slate-700 bg-card-dark flex items-center justify-center overflow-hidden mb-4">
+            {previewUrl ? <img src={previewUrl} className="size-full object-cover" /> : <span className="material-symbols-outlined text-4xl text-slate-600">photo_camera</span>}
+          </div>
+          <label className="bg-surface-dark px-4 py-2 rounded-xl text-xs font-bold cursor-pointer">
+            拍照或上傳封面
+            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+          </label>
+        </div>
 
-         <div className="space-y-4">
-            <div>
-               <label className="text-[10px] font-bold text-accent-purple uppercase tracking-widest block mb-1">書名 (TITLE) <span className="text-primary">*</span></label>
-               <input 
-                 required
-                 value={title}
-                 onChange={(e) => setTitle(e.target.value)}
-                 className="w-full bg-surface-dark border-0 rounded-xl py-4 px-5 text-white placeholder-slate-600 focus:ring-2 focus:ring-primary"
-                 placeholder="輸入冒險之書名稱"
-               />
-            </div>
+        <input value={title} onChange={e => setTitle(e.target.value)} placeholder="書名" className="w-full bg-card-dark p-4 rounded-xl border-0 focus:ring-2 focus:ring-primary" required />
+        <input value={author} onChange={e => setAuthor(e.target.value)} placeholder="作者" className="w-full bg-card-dark p-4 rounded-xl border-0 focus:ring-2 focus:ring-primary" />
+        <input type="number" value={pages || ''} onChange={e => setPages(Number(e.target.value))} placeholder="總頁數" className="w-full bg-card-dark p-4 rounded-xl border-0 focus:ring-2 focus:ring-primary" required />
+        
+        <select value={genre} onChange={e => setGenre(e.target.value)} className="w-full bg-card-dark p-4 rounded-xl border-0">
+          <option value="自我成長">自我成長</option>
+          <option value="文學小說">文學小說</option>
+          <option value="商業理財">商業理財</option>
+          <option value="歷史人文">歷史人文</option>
+        </select>
+      </div>
 
-            <div>
-               <label className="text-[10px] font-bold text-accent-purple uppercase tracking-widest block mb-1">作者 (AUTHOR)</label>
-               <input 
-                 value={author}
-                 onChange={(e) => setAuthor(e.target.value)}
-                 className="w-full bg-surface-dark border-0 rounded-xl py-4 px-5 text-white placeholder-slate-600 focus:ring-2 focus:ring-primary"
-                 placeholder="輸入創造者姓名"
-               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-               <div>
-                  <label className="text-[10px] font-bold text-accent-purple uppercase tracking-widest block mb-1">總頁數 (PAGES) <span className="text-primary">*</span></label>
-                  <input 
-                    required
-                    type="number"
-                    value={pages || ''}
-                    onChange={(e) => setPages(Number(e.target.value))}
-                    className="w-full bg-surface-dark border-0 rounded-xl py-4 px-5 text-white placeholder-slate-600 focus:ring-2 focus:ring-primary"
-                    placeholder="0"
-                  />
-               </div>
-               <div>
-                  <label className="text-[10px] font-bold text-accent-purple uppercase tracking-widest block mb-1">類型 (GENRE)</label>
-                  <select 
-                    value={genre}
-                    onChange={(e) => setGenre(e.target.value)}
-                    className="w-full bg-surface-dark border-0 rounded-xl py-4 px-5 text-white focus:ring-2 focus:ring-primary"
-                  >
-                     <option value="">選擇類別</option>
-                     <option value="自我成長">自我成長 (Growth)</option>
-                     <option value="奇幻冒險">奇幻冒險 (Fantasy)</option>
-                     <option value="科幻經典">科幻經典 (Sci-Fi)</option>
-                     <option value="歷史人文">歷史人文 (History)</option>
-                  </select>
-               </div>
-            </div>
-         </div>
-
-         <div className="flex-1"></div>
-
-         <button 
-           type="submit"
-           className="w-full bg-primary py-4 rounded-xl font-bold text-white shadow-[0_0_20px_rgba(164,19,236,0.4)] flex items-center justify-center gap-2 mb-8"
-         >
-            <span className="material-symbols-outlined">swords</span>
-            接受任務 (Accept Quest)
-         </button>
-      </form>
-    </div>
+      <button type="submit" className="mt-auto mb-8 w-full bg-primary py-4 rounded-2xl font-bold shadow-glow">接受任務 (Accept Quest)</button>
+    </form>
   );
 };
 

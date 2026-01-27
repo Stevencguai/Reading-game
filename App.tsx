@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Book, UserStats, ViewState } from './types';
-import { INITIAL_STATS, MOCK_BOOKS } from './constants';
+import { INITIAL_STATS } from './constants';
 import Dashboard from './components/Dashboard';
 import Shop from './components/Shop';
 import Stats from './components/Stats';
@@ -12,119 +11,104 @@ import AddQuest from './components/AddQuest';
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.Dashboard);
   const [stats, setStats] = useState<UserStats>(INITIAL_STATS);
-  const [books, setBooks] = useState<Book[]>(MOCK_BOOKS);
-  const [activeBook, setActiveBook] = useState<Book | null>(MOCK_BOOKS[0]);
-  const [isReading, setIsReading] = useState(false);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [activeBook, setActiveBook] = useState<Book | null>(null);
+  const [showTutorial, setShowTutorial] = useState(true); // 新手指導開關
 
-  // Simple "routing" effect to handle back buttons or initial states
-  const renderView = () => {
-    switch (currentView) {
-      case ViewState.Dashboard:
-        return (
-          <Dashboard 
-            stats={stats} 
-            books={books} 
-            onStartReading={(book) => {
-              setActiveBook(book);
-              setCurrentView(ViewState.ReadingSession);
-            }}
-            onAddQuest={() => setCurrentView(ViewState.AddQuest)}
-          />
-        );
-      case ViewState.Shop:
-        return <Shop mana={stats.mana} onBack={() => setCurrentView(ViewState.Dashboard)} />;
-      case ViewState.Stats:
-        return <Stats stats={stats} onBack={() => setCurrentView(ViewState.Dashboard)} />;
-      case ViewState.Calendar:
-        return <Calendar onBack={() => setCurrentView(ViewState.Dashboard)} />;
-      case ViewState.AddQuest:
-        return (
-          <AddQuest 
-            onBack={() => setCurrentView(ViewState.Dashboard)} 
-            onSave={(newBook) => {
-              setBooks([newBook, ...books]);
-              setCurrentView(ViewState.Dashboard);
-            }}
-          />
-        );
-      case ViewState.ReadingSession:
-        if (!activeBook) return null;
-        return (
-          <ReadingSession 
-            book={activeBook} 
-            onBack={() => setCurrentView(ViewState.Dashboard)}
-            onComplete={(pagesRead) => {
-              // Update stats logic
-              const updatedBooks = books.map(b => 
-                b.id === activeBook.id 
-                  ? { ...b, currentPage: Math.min(b.totalPages, b.currentPage + pagesRead) } 
-                  : b
-              );
-              setBooks(updatedBooks);
-              setStats({
-                ...stats,
-                xp: stats.xp + (pagesRead * 2), // 2 XP per page
-                mana: stats.mana + pagesRead,
-              });
-              setCurrentView(ViewState.Dashboard);
-            }}
-          />
-        );
-      default:
-        return <Dashboard stats={stats} books={books} onStartReading={setActiveBook} onAddQuest={() => {}} />;
-    }
+  // 模擬從 LocalStorage 讀取資料
+  useEffect(() => {
+    const savedStats = localStorage.getItem('user_stats');
+    const savedBooks = localStorage.getItem('user_books');
+    if (savedStats) setStats(JSON.parse(savedStats));
+    if (savedBooks) setBooks(JSON.parse(savedBooks));
+    if (savedStats || savedBooks) setShowTutorial(false);
+  }, []);
+
+  // 儲存資料
+  useEffect(() => {
+    localStorage.setItem('user_stats', JSON.stringify(stats));
+    localStorage.setItem('user_books', JSON.stringify(books));
+  }, [stats, books]);
+
+  const handleAddBook = (newBook: Book) => {
+    setBooks([...books, newBook]);
+    setCurrentView(ViewState.Dashboard);
+  };
+
+  const handleCompleteReading = (pagesRead: number) => {
+    if (!activeBook) return;
+    
+    // 計算邏輯：每讀一頁增加 5 XP, 2 瑪那，並根據頁數增加屬性
+    const xpGained = pagesRead * 5;
+    const manaGained = pagesRead * 2;
+    
+    const updatedBook = {
+      ...activeBook,
+      currentPage: activeBook.currentPage + pagesRead,
+      lastRead: new Date().toISOString(),
+      status: (activeBook.currentPage + pagesRead >= activeBook.totalPages) ? 'completed' : 'active'
+    } as Book;
+
+    setBooks(books.map(b => b.id === activeBook.id ? updatedBook : b));
+    setStats(prev => ({
+      ...prev,
+      xp: prev.xp + xpGained,
+      mana: prev.mana + manaGained,
+      attributes: {
+        ...prev.attributes,
+        focus: prev.attributes.focus + (pagesRead > 10 ? 1 : 0),
+        discipline: prev.attributes.discipline + 1
+      }
+    }));
+    
+    setCurrentView(ViewState.Dashboard);
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-md mx-auto relative shadow-2xl overflow-hidden bg-background-dark">
-      {/* View Content */}
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-20">
-        {renderView()}
-      </div>
-
-      {/* Bottom Navigation (Always Visible except in Reading mode) */}
-      {currentView !== ViewState.ReadingSession && (
-        <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-card-dark/95 backdrop-blur-lg border-t border-border-purple/30 h-16 flex items-center justify-around z-50">
+    <div className="relative h-screen overflow-hidden bg-background-dark text-white font-body">
+      {/* 新手指導 Overlay */}
+      {showTutorial && (
+        <div className="absolute inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-8 text-center">
+          <span className="material-symbols-outlined text-6xl text-primary mb-4">auto_awesome</span>
+          <h2 className="text-2xl font-bold mb-2">歡迎來到冒險日誌</h2>
+          <p className="text-slate-400 mb-8">在這裡，你的每一次閱讀都會轉化為英雄的屬性。準備好開始你的知識冒險了嗎？</p>
           <button 
-            onClick={() => setCurrentView(ViewState.Dashboard)}
-            className={`flex flex-col items-center gap-1 w-full ${currentView === ViewState.Dashboard ? 'text-primary' : 'text-slate-500'}`}
+            onClick={() => setShowTutorial(false)}
+            className="bg-primary px-8 py-3 rounded-xl font-bold"
           >
-            <span className="material-symbols-outlined">map</span>
-            <span className="text-[10px] font-bold">Quests</span>
+            開始新手任務
           </button>
-          <button 
-            onClick={() => setCurrentView(ViewState.Shop)}
-            className={`flex flex-col items-center gap-1 w-full ${currentView === ViewState.Shop ? 'text-primary' : 'text-slate-500'}`}
-          >
-            <span className="material-symbols-outlined">storefront</span>
-            <span className="text-[10px] font-bold">Shop</span>
-          </button>
-          <button 
-            onClick={() => setCurrentView(ViewState.Stats)}
-            className={`flex flex-col items-center gap-1 w-full ${currentView === ViewState.Stats ? 'text-primary' : 'text-slate-500'}`}
-          >
-            <span className="material-symbols-outlined">bar_chart</span>
-            <span className="text-[10px] font-bold">Stats</span>
-          </button>
-          <button 
-            onClick={() => setCurrentView(ViewState.Calendar)}
-            className={`flex flex-col items-center gap-1 w-full ${currentView === ViewState.Calendar ? 'text-primary' : 'text-slate-500'}`}
-          >
-            <span className="material-symbols-outlined">calendar_month</span>
-            <span className="text-[10px] font-bold">Legacy</span>
-          </button>
-        </nav>
+        </div>
       )}
 
-      {/* Floating Action Button (only on Dashboard) */}
-      {currentView === ViewState.Dashboard && (
-        <button 
-          onClick={() => setCurrentView(ViewState.AddQuest)}
-          className="absolute bottom-24 right-5 size-14 rounded-full bg-primary text-white shadow-[0_0_20px_rgba(164,19,236,0.5)] flex items-center justify-center z-40 hover:scale-110 active:scale-95 transition-all"
-        >
-          <span className="material-symbols-outlined text-3xl">add</span>
+      <main className="h-full overflow-y-auto pb-24">
+        {currentView === ViewState.Dashboard && (
+          <Dashboard stats={stats} books={books} onStartReading={(b) => { setActiveBook(b); setCurrentView(ViewState.ReadingSession); }} onAddQuest={() => setCurrentView(ViewState.AddQuest)} />
+        )}
+        {currentView === ViewState.Shop && <Shop mana={stats.mana} onBack={() => setCurrentView(ViewState.Dashboard)} />}
+        {currentView === ViewState.Stats && <Stats stats={stats} onBack={() => setCurrentView(ViewState.Dashboard)} />}
+        {currentView === ViewState.Calendar && <Calendar onBack={() => setCurrentView(ViewState.Dashboard)} />}
+        {currentView === ViewState.AddQuest && <AddQuest onBack={() => setCurrentView(ViewState.Dashboard)} onSave={handleAddBook} />}
+        {currentView === ViewState.ReadingSession && activeBook && (
+          <ReadingSession book={activeBook} onBack={() => setCurrentView(ViewState.Dashboard)} onComplete={handleCompleteReading} />
+        )}
+      </main>
+
+      {/* Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-card-dark/80 backdrop-blur-lg border-t border-white/5 px-6 py-3 flex justify-between items-center z-50">
+        <button onClick={() => setCurrentView(ViewState.Dashboard)} className={`flex flex-col items-center gap-1 ${currentView === ViewState.Dashboard ? 'text-primary' : 'text-slate-500'}`}>
+          <span className="material-symbols-outlined">home</span>
+          <span className="text-[10px] font-bold">Home</span>
         </button>
-      )}
+        <button onClick={() => setCurrentView(ViewState.Shop)} className={`flex flex-col items-center gap-1 ${currentView === ViewState.Shop ? 'text-primary' : 'text-slate-500'}`}>
+          <span className="material-symbols-outlined">storefront</span>
+          <span className="text-[10px] font-bold">Shop</span>
+        </button>
+        <button onClick={() => setCurrentView(ViewState.Stats)} className={`flex flex-col items-center gap-1 ${currentView === ViewState.Stats ? 'text-primary' : 'text-slate-500'}`}>
+          <span className="material-symbols-outlined">person</span>
+          <span className="text-[10px] font-bold">Hero</span>
+        </button>
+      </nav>
     </div>
   );
 };
