@@ -36,6 +36,8 @@ export const MOCK_SHOP: ShopItem[] = [
     locked: false
   }
 ];
+
+// 補回這個讓 Calendar.tsx 恢復正常
 export const MOCK_BADGES = [
   {
     id: 'b1',
@@ -46,9 +48,9 @@ export const MOCK_BADGES = [
   },
   {
     id: 'b2',
-    name: '專注達人',
-    description: '連續專注超過 60 分鐘',
-    icon: 'timer',
+    name: '知識守門人',
+    description: '連續登入 3 天',
+    icon: 'verified_user',
     unlocked: false
   }
 ];
