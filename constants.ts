@@ -36,3 +36,19 @@ export const MOCK_SHOP: ShopItem[] = [
     locked: false
   }
 ];
+export const MOCK_BADGES = [
+  {
+    id: 'b1',
+    name: '初出茅廬',
+    description: '完成第一次閱讀任務',
+    icon: 'star',
+    unlocked: true
+  },
+  {
+    id: 'b2',
+    name: '專注達人',
+    description: '連續專注超過 60 分鐘',
+    icon: 'timer',
+    unlocked: false
+  }
+];
