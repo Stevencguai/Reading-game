@@ -13,9 +13,9 @@ const App: React.FC = () => {
   const [stats, setStats] = useState<UserStats>(INITIAL_STATS);
   const [books, setBooks] = useState<Book[]>([]);
   const [activeBook, setActiveBook] = useState<Book | null>(null);
-  const [showTutorial, setShowTutorial] = useState(true); // 新手指導開關
+  const [showTutorial, setShowTutorial] = useState(true);
 
-  // 模擬從 LocalStorage 讀取資料
+  // 1. 模擬從 LocalStorage 讀取資料
   useEffect(() => {
     const savedStats = localStorage.getItem('user_stats');
     const savedBooks = localStorage.getItem('user_books');
@@ -24,7 +24,7 @@ const App: React.FC = () => {
     if (savedStats || savedBooks) setShowTutorial(false);
   }, []);
 
-  // 儲存資料
+  // 2. 儲存資料
   useEffect(() => {
     localStorage.setItem('user_stats', JSON.stringify(stats));
     localStorage.setItem('user_books', JSON.stringify(books));
@@ -38,7 +38,6 @@ const App: React.FC = () => {
   const handleCompleteReading = (pagesRead: number) => {
     if (!activeBook) return;
     
-    // 計算邏輯：每讀一頁增加 5 XP, 2 瑪那，並根據頁數增加屬性
     const xpGained = pagesRead * 5;
     const manaGained = pagesRead * 2;
     
@@ -65,48 +64,85 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative h-screen overflow-hidden bg-background-dark text-white font-body">
+    <div className="relative h-screen overflow-hidden bg-slate-950 text-white font-sans">
       {/* 新手指導 Overlay */}
       {showTutorial && (
-        <div className="absolute inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-8 text-center">
-          <span className="material-symbols-outlined text-6xl text-primary mb-4">auto_awesome</span>
-          <h2 className="text-2xl font-bold mb-2">歡迎來到冒險日誌</h2>
-          <p className="text-slate-400 mb-8">在這裡，你的每一次閱讀都會轉化為英雄的屬性。準備好開始你的知識冒險了嗎？</p>
+        <div className="absolute inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
+          <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mb-6 border border-primary/50 animate-pulse">
+            <span className="material-symbols-outlined text-5xl text-primary">auto_awesome</span>
+          </div>
+          <h2 className="text-3xl font-black mb-4 tracking-wider text-primary">冒險開始</h2>
+          <p className="text-slate-400 mb-10 leading-relaxed">
+            勇者，歡迎來到冒險日誌。<br/>
+            你的每一次翻頁，都將化為成長的經驗值。
+          </p>
           <button 
             onClick={() => setShowTutorial(false)}
-            className="bg-primary px-8 py-3 rounded-xl font-bold"
+            className="bg-primary hover:bg-primary-light text-black px-12 py-4 rounded-2xl font-black shadow-lg shadow-primary/20 transition-transform active:scale-95"
           >
-            開始新手任務
+            踏上旅程
           </button>
         </div>
       )}
 
-      <main className="h-full overflow-y-auto pb-24">
+      {/* 主要內容區域 */}
+      <main className="h-full overflow-y-auto pb-32">
         {currentView === ViewState.Dashboard && (
-          <Dashboard stats={stats} books={books} onStartReading={(b) => { setActiveBook(b); setCurrentView(ViewState.ReadingSession); }} onAddQuest={() => setCurrentView(ViewState.AddQuest)} />
+          <Dashboard 
+            stats={stats} 
+            books={books} 
+            onStartReading={(b) => { setActiveBook(b); setCurrentView(ViewState.ReadingSession); }} 
+            onAddQuest={() => setCurrentView(ViewState.AddQuest)} 
+          />
         )}
-        {currentView === ViewState.Shop && <Shop mana={stats.mana} onBack={() => setCurrentView(ViewState.Dashboard)} />}
-        {currentView === ViewState.Stats && <Stats stats={stats} onBack={() => setCurrentView(ViewState.Dashboard)} />}
-        {currentView === ViewState.Calendar && <Calendar onBack={() => setCurrentView(ViewState.Dashboard)} />}
-        {currentView === ViewState.AddQuest && <AddQuest onBack={() => setCurrentView(ViewState.Dashboard)} onSave={handleAddBook} />}
+        
+        {/* 修正：Shop 需要 stats 來處理購買扣款，並傳入 setStats */}
+        {currentView === ViewState.Shop && (
+          <Shop stats={stats} setStats={setStats} onBack={() => setCurrentView(ViewState.Dashboard)} />
+        )}
+        
+        {currentView === ViewState.Stats && (
+          <Stats stats={stats} onBack={() => setCurrentView(ViewState.Dashboard)} />
+        )}
+        
+        {currentView === ViewState.Calendar && (
+          <Calendar onBack={() => setCurrentView(ViewState.Dashboard)} />
+        )}
+        
+        {currentView === ViewState.AddQuest && (
+          <AddQuest onBack={() => setCurrentView(ViewState.Dashboard)} onSave={handleAddBook} />
+        )}
+        
         {currentView === ViewState.ReadingSession && activeBook && (
-          <ReadingSession book={activeBook} onBack={() => setCurrentView(ViewState.Dashboard)} onComplete={handleCompleteReading} />
+          <ReadingSession 
+            book={activeBook} 
+            onBack={() => setCurrentView(ViewState.Dashboard)} 
+            onComplete={handleCompleteReading} 
+          />
         )}
       </main>
 
-      {/* Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card-dark/80 backdrop-blur-lg border-t border-white/5 px-6 py-3 flex justify-between items-center z-50">
-        <button onClick={() => setCurrentView(ViewState.Dashboard)} className={`flex flex-col items-center gap-1 ${currentView === ViewState.Dashboard ? 'text-primary' : 'text-slate-500'}`}>
-          <span className="material-symbols-outlined">home</span>
-          <span className="text-[10px] font-bold">Home</span>
+      {/* Navigation - 底部導覽列 */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-xl border-t border-white/10 px-4 py-4 flex justify-around items-center z-50 shadow-2xl">
+        <button onClick={() => setCurrentView(ViewState.Dashboard)} className={`flex flex-col items-center gap-1 transition-colors ${currentView === ViewState.Dashboard ? 'text-primary' : 'text-slate-500'}`}>
+          <span className="material-symbols-outlined text-2xl">home</span>
+          <span className="text-[10px] font-bold uppercase tracking-tighter">冒險</span>
         </button>
-        <button onClick={() => setCurrentView(ViewState.Shop)} className={`flex flex-col items-center gap-1 ${currentView === ViewState.Shop ? 'text-primary' : 'text-slate-500'}`}>
-          <span className="material-symbols-outlined">storefront</span>
-          <span className="text-[10px] font-bold">Shop</span>
+        
+        {/* 新增：日曆/打卡紀錄按鈕 */}
+        <button onClick={() => setCurrentView(ViewState.Calendar)} className={`flex flex-col items-center gap-1 transition-colors ${currentView === ViewState.Calendar ? 'text-primary' : 'text-slate-500'}`}>
+          <span className="material-symbols-outlined text-2xl">calendar_month</span>
+          <span className="text-[10px] font-bold uppercase tracking-tighter">紀錄</span>
         </button>
-        <button onClick={() => setCurrentView(ViewState.Stats)} className={`flex flex-col items-center gap-1 ${currentView === ViewState.Stats ? 'text-primary' : 'text-slate-500'}`}>
-          <span className="material-symbols-outlined">person</span>
-          <span className="text-[10px] font-bold">Hero</span>
+
+        <button onClick={() => setCurrentView(ViewState.Shop)} className={`flex flex-col items-center gap-1 transition-colors ${currentView === ViewState.Shop ? 'text-primary' : 'text-slate-500'}`}>
+          <span className="material-symbols-outlined text-2xl">storefront</span>
+          <span className="text-[10px] font-bold uppercase tracking-tighter">商店</span>
+        </button>
+
+        <button onClick={() => setCurrentView(ViewState.Stats)} className={`flex flex-col items-center gap-1 transition-colors ${currentView === ViewState.Stats ? 'text-primary' : 'text-slate-500'}`}>
+          <span className="material-symbols-outlined text-2xl">person</span>
+          <span className="text-[10px] font-bold uppercase tracking-tighter">英雄</span>
         </button>
       </nav>
     </div>
